@@ -1,4 +1,5 @@
 url: your.mattermost.server.com
+# 8065 for http and 443 for https
 port: 443
 # Need token or login_id and password.
 login_id: 
