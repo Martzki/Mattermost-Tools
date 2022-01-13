@@ -1,0 +1,11 @@
+url: your.mattermost.server.com
+port: 443
+# Need token or login_id and password.
+login_id: 
+password: 
+token: 
+reply_config:
+  message: Auto Reply
+  extend_message: I got it
+  interval: 60 # Seconds
+  max_interval: 604800 # Seconds
