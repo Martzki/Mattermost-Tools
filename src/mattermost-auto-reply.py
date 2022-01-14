@@ -42,11 +42,14 @@ def auto_reply_handler(post, sender_name):
 
 	REPLY_RECORD[channel_id] = now_time
 
-	extend_prompt = '\nSend `%s` to extend auto reply interval to %s.(Default: %s)' % \
+	extend_prompt = '\n##### Send `%s` to extend auto reply interval to %s.(Default: %s)' % \
 					(EXTEND_MESSAGE, datetime.timedelta(seconds=MAX_REPLY_INTERVAL),
 					 datetime.timedelta(seconds=REPLY_INTERVAL))
 
 	MM.posts.create_post({'channel_id': channel_id, 'message': REPLY_MESSAGE + extend_prompt})
+
+	## Mark new post as unread so that we won't lose notification.
+	logging.info(MM.client.make_request('post', '/users/%s/posts/%s/set_unread' % (MM.client.userid, post['id'])))
 
 
 def post_handler(msg):
@@ -74,7 +77,7 @@ def post_handler(msg):
 async def mm_event_handler(message):
 	msg = json.loads(message)
 
-	#logging.debug(json.dumps(msg, indent=2))
+	logging.debug(json.dumps(msg, indent=2))
 
 	post = post_handler(msg)
 
@@ -109,7 +112,7 @@ if __name__ == '__main__':
 			   'port': port,
 			   'keepalive': True,
 			   'keepalive_delay': 5,
-			   'scheme': 'http',
+			   'scheme': 'https' if port == 443 else 'http',
 			   'login_id': login_id,
 			   'password': password,
 			   'token': token}
