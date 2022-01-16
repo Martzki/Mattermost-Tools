@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+<meta charset="UTF-8">
+<title>Mattermost Auto Reply Web Console</title>
+
+<!-- <link rel="stylesheet" href="templates/css/style.css"> -->
+
+<script type="text/javascript" src="js/auto_reply.js"></script>
+
+</head>
+<body onload="refresh()">
+  <p>
+    <h1>Mattermost Auto Reply Web Console</h1>
+    <hr/>
+  </p>
+
+  <p>
+    <h2>Authentication</h2>
+    <table border="1" id="AuthenticationTable">
+      <tr>
+        <td>
+          <label>Connect Status:</label>
+        </td>
+        <td>
+          <label id="ConnectStatus">Not connected</label>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label>Server:</label>
+        </td>
+        <td>
+          <input type="text" id="ServerURL" placeholder="your.mattermost.server.com">
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label>Protocol:</label>
+        </td>
+        <td>
+          <input type="radio" name="Protocol" id="HTTPS" class="form__input" checked>HTTPS
+        </td>
+        <td>
+          <input type="radio" name="Protocol" id="HTTP">HTTP
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label>Authentication Method:</label>
+        </td>
+        <td>
+          <input type="radio" name="Method" id="MethodToken" class="form__input" checked onclick="methodClicked()">Token
+        </td>
+        <td>
+          <input type="radio" name="Method" id="MethodPassword" onclick="methodClicked()">Password
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label>Token:</label>
+        </td>
+        <td>
+          <input type="password" id="Token">
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label>Login ID:</label>
+        </td>
+        <td>
+          <input type="text" id="Login_ID" disabled="true">
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label>Password:</label>
+        </td>
+        <td>
+          <input type="password" id="Password" disabled="true">
+        </td>
+      </tr>
+      <tr>
+        <td colspan="3">
+          <input type="button" id="Login" width="100%" value="Login" onclick="login()">
+        </td>
+      </tr>
+    </table>
+    <hr/>
+  <p>
+
+  <p>
+    <h2>Auto Reply Config</h2>
+    <table border="1">
+      <tr>
+        <td>
+          <label>Auto Reply Interval(Seconeds):</label>
+        </td>
+        <td>
+          <input type="text" id="ReplyInterval" oninput="value=value.replace(/[^\d]/g,'')">
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label>Auto Reply Max Interval(Seconeds):</label>
+        </td>
+        <td>
+          <input type="text" id="MaxReplyInterval" oninput="value=value.replace(/[^\d]/g,'')">
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label>Auto Reply Message:</label>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <textarea rows="3" id="ReplyMessage" style="resize:none;" width="100%"></textarea>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label>Auto Reply Extend Message:</label>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <textarea rows="3" id="ExtendMessage" style="resize:none;">I got it</textarea>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <input type="button" id="Apply" value="Apply" width="100%" onclick="applyConfig()">
+        </td>
+      </tr>
+    </table>
+  </p>
+
+</body>
+</html>
+
