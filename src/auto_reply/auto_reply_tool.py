@@ -28,9 +28,11 @@ class WebConsoleHandler(BaseHTTPRequestHandler):
 		args = result.query.split('&') if result.query != '' else []
 
 		if path == '/':
-			self.show_page('web_console/index.html')
+			self.resource_handler('web_console/index.html', 'text/html')
 		elif path == '/js/auto_reply.js':
-			self.show_page('web_console/js/auto_reply.js')
+			self.resource_handler('web_console/js/auto_reply.js', 'application/x-javascript')
+		elif path == '/images/favicon.ico':
+			self.resource_handler('web_console/images/favicon.ico', 'image/x-icon')
 		elif path == '/refresh':
 			self.refresh_handler()
 		else:
@@ -58,13 +60,19 @@ class WebConsoleHandler(BaseHTTPRequestHandler):
 		self.end_headers()
 		self.wfile.write(bytes(json.dumps(resp), encoding='utf-8'))
 
-	def show_page(self, page):
+	def resource_handler(self, path, header):
 		self.send_response(200)
-		self.send_header("Content-type", "text/html")
+		self.send_header("Content-type", header)
 		self.end_headers()
-		with open(page, "r") as html:
-			for line in html.readlines():
-				self.wfile.write(bytes(line, encoding='utf-8'))
+
+		if header == 'image/x-icon':
+			with open(path, 'rb') as resource:
+				for line in resource.readlines():
+					self.wfile.write(bytes(line))
+		else:
+			with open(path, 'r') as resource:
+				for line in resource.readlines():
+					self.wfile.write(bytes(line, encoding='utf-8'))
 
 	def refresh_handler(self):
 		try:
