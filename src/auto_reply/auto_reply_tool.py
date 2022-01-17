@@ -115,7 +115,7 @@ class WebConsoleHandler(BaseHTTPRequestHandler):
 				   'port': 443 if data['protocol'] == 'HTTPS' else 8065,
 				   'keepalive': True,
 				   'keepalive_delay': 5,
-				   'scheme': data['protocol'],
+				   'scheme': data['protocol'].lower(),
 				   'login_id': data['login_id'],
 				   'password': data['password'],
 				   'token': data['token']}
@@ -186,9 +186,9 @@ if __name__ == '__main__':
 			'password': 'password',
 			'token': 'token',
 			'reply_config': {
-				'interval': 1800,
-				'max_interval': 86400,
-				'message': 'This is an auto reply message.',
+				'reply_interval': 1800,
+				'max_reply_interval': 86400,
+				'reply_message': 'This is an auto reply message.',
 				'extend_message': 'I got it'
 			}
 		}

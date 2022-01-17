@@ -1,4 +1,4 @@
-var server_url = "http://127.0.0.1:6655/";
+var server_url = window.location.href;
 
 function methodClicked() {
 	var value;
