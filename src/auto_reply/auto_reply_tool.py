@@ -9,6 +9,7 @@ import urllib
 import threading
 import os
 import time
+import sys
 
 SERVER_URL = '0.0.0.0'
 SERVER_PORT = 6655
@@ -19,6 +20,61 @@ class WebConsoleServer(HTTPServer):
 		HTTPServer.__init__(self, server_address, RequestHandlerClass, bind_and_activate=True)
 		self.auto_reply_tool = None
 		self.work_thread = None
+		self.gui_thread = None
+		self.icon = None
+
+	def start(self):
+		# Only create icon GUI thread on win32 platform.
+		if sys.platform == 'win32':
+			from pystray import MenuItem
+			from pystray import Icon
+			from PIL import Image
+			import webbrowser
+
+			image = Image.open("web_console/images/favicon.ico")
+			menu = (MenuItem('HomePage', self.icon_home_page_handler, default=True),
+					MenuItem('Exit', self.icon_exit_handler))
+			icon = Icon("MattermostTools", image, "MattermostTools", menu)
+
+			self.gui_thread = threading.Thread(target=self.icon.run)
+			self.gui_thread.start()
+
+			# Info notification.
+			self.icon.notify("Web Console is working at: http://127.0.0.1:%s" % \
+							 (SERVER_PORT),
+							 "MattermostTools")
+
+			webbrowser.open("http://127.0.0.1:%s" % (SERVER_PORT))
+
+		try:
+			self.serve_forever()
+		except KeyboardInterrupt:
+			self.stop()
+			exit(0)
+
+	def stop(self):
+		# TODO: the code below can't stop gracefully.
+		# if type(self.auto_reply_tool) == AutoReplyTool:
+		# 	self.auto_reply_tool.stop()
+		# 	logging.info('Stop auto reply tool done.')
+
+		# if type(self.work_thread) == threading.Thread:
+		# 	self.work_thread.join()
+		# 	logging.info('Stop auto reply work thread done.')
+
+		if type(self.gui_thread) == threading.Thread:
+			self.icon.stop()
+			self.gui_thread.join()
+			logging.info('Stop GUI thread done.')
+
+		self.shutdown()
+		logging.info('Stop web console server done.')
+
+	def icon_home_page_handler(self):
+		webbrowser.open("http://127.0.0.1:%s" % (SERVER_PORT))
+
+	def icon_exit_handler(self):
+		self.stop()
 
 
 class WebConsoleHandler(BaseHTTPRequestHandler):
@@ -182,6 +238,7 @@ class WebConsoleHandler(BaseHTTPRequestHandler):
 		except Exception as e:
 			logging.error("Update config %s faield: %s." % (CONF, e))
 
+
 if __name__ == '__main__':
 	logging.basicConfig(level=logging.INFO)
 
@@ -208,37 +265,11 @@ if __name__ == '__main__':
 			logging.critical("Init config %s failed: %s." % (CONF, e))
 			exit(-1)
 
-	web_console_mode = True
-
-	if web_console_mode:
+	try:
 		web_console = WebConsoleServer((SERVER_URL, SERVER_PORT), WebConsoleHandler)
-		web_console.serve_forever()
-	else:
-		with open(CONF, 'r') as conf:
-			mm_conf = yaml.safe_load(conf.read())
-			url = mm_conf['url']
-			port = mm_conf['port']
-			login_id = mm_conf['login_id']
-			password = mm_conf['password']
-			token = mm_conf['token']
-			reply_message = mm_conf['reply_config']['message']
-			extend_message = mm_conf['reply_config']['extend_message']
-			reply_interval = mm_conf['reply_config']['interval']
-			max_reply_interval = mm_conf['reply_config']['max_interval']
+	except OSError as e:
+		logging.critical("Init web console server(%s:%s) failed: %s." %\
+						 (SERVER_URL, SERVER_PORT))
+		exit(-1)
 
-		options = {'url': url,
-				   'port': port,
-				   'keepalive': True,
-				   'keepalive_delay': 5,
-				   'scheme': 'https' if port == 443 else 'http',
-				   'login_id': login_id,
-				   'password': password,
-				   'token': token}
-
-		tool = AutoReplyTool(options,
-							 reply_message=reply_message,
-							 extend_message=extend_message,
-							 reply_interval=reply_interval,
-							 max_reply_interval=max_reply_interval)
-
-		tool.login()
+	web_console.start()

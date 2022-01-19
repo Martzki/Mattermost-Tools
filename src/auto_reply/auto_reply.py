@@ -22,6 +22,10 @@ class AutoReplyTool(object):
 		self.update_config_cache = {'updated': False}
 		self.reply_record = {}
 		self.login_status = 0 # 0: uninitailized, 1: successed, -1 failed
+		self.event_loop = None
+
+	def stop(self):
+		self.mm_driver.disconnect()
 
 	def login(self):
 		try:
@@ -34,9 +38,11 @@ class AutoReplyTool(object):
 
 		self.username = '@' + self.mm_driver.client.username
 
-		asyncio.set_event_loop(asyncio.new_event_loop())
+		self.event_loop = asyncio.new_event_loop()
+		asyncio.set_event_loop(self.event_loop)
 
 		self.mm_driver.init_websocket(self.mm_event_handler)
+		# self.event_loop.close()
 
 
 	async def mm_event_handler(self, message):
