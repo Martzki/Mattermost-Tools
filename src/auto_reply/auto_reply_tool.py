@@ -11,6 +11,13 @@ import os
 import time
 import sys
 
+if sys.platform == 'win32':
+	from pystray import MenuItem
+	from pystray import Icon
+	from PIL import Image
+	import webbrowser
+
+
 SERVER_URL = '0.0.0.0'
 SERVER_PORT = 6655
 CONF = 'mm_conf.yaml'
@@ -26,25 +33,13 @@ class WebConsoleServer(HTTPServer):
 	def start(self):
 		# Only create icon GUI thread on win32 platform.
 		if sys.platform == 'win32':
-			from pystray import MenuItem
-			from pystray import Icon
-			from PIL import Image
-			import webbrowser
-
 			image = Image.open("web_console/images/favicon.ico")
 			menu = (MenuItem('HomePage', self.icon_home_page_handler, default=True),
 					MenuItem('Exit', self.icon_exit_handler))
-			icon = Icon("MattermostTools", image, "MattermostTools", menu)
+			self.icon = Icon("MattermostTools", image, "MattermostTools", menu)
 
-			self.gui_thread = threading.Thread(target=self.icon.run)
+			self.gui_thread = threading.Thread(target=self.icon.run, args=[self.icon_setup])
 			self.gui_thread.start()
-
-			# Info notification.
-			self.icon.notify("Web Console is working at: http://127.0.0.1:%s" % \
-							 (SERVER_PORT),
-							 "MattermostTools")
-
-			webbrowser.open("http://127.0.0.1:%s" % (SERVER_PORT))
 
 		try:
 			self.serve_forever()
@@ -64,11 +59,17 @@ class WebConsoleServer(HTTPServer):
 
 		if type(self.gui_thread) == threading.Thread:
 			self.icon.stop()
-			self.gui_thread.join()
 			logging.info('Stop GUI thread done.')
 
 		self.shutdown()
 		logging.info('Stop web console server done.')
+
+	def icon_setup(self, icon):
+		icon.visible = True
+		icon.notify("Web Console is working at: http://127.0.0.1:%s" % \
+					(SERVER_PORT), "MattermostTools")
+
+		webbrowser.open("http://127.0.0.1:%s" % (SERVER_PORT))
 
 	def icon_home_page_handler(self):
 		webbrowser.open("http://127.0.0.1:%s" % (SERVER_PORT))
