@@ -30,26 +30,26 @@
                         <input type="text" id="ServerURL" placeholder="your.mattermost.server.com" required="true">
                         <p class="dela-form__title2" style="margin-bottom: 0.8em">Protocol:</p>
                         <div class="pretty p-default p-curve" style="color: #fff; margin-bottom: 1.3em; margin-right: 10em">
-                            <input type="radio" id="HTTP" />
+                            <input type="radio" name="Protocol" id="HTTP" />
                             <div class="state">
                                 <label>HTTP</label>
                             </div>
                         </div>
                         <div class="pretty p-default p-curve" style="color: #fff; margin-bottom: 1.3em">
-                            <input type="radio" id="HTTPS" />
+                            <input type="radio" name="Protocol" id="HTTPS" />
                             <div class="state">
                                 <label>HTTPS</label>
                             </div>
                         </div>
                         <p class="dela-form__title2" style="margin-bottom: 0.8em">Authentication Method:</p>
                         <div class="pretty p-default p-curve" style="color: #fff; margin-bottom: 1.3em; margin-right: 9.8em">
-                            <input type="radio" id="MethodToken" onclick="methodClicked()"/>
+                            <input type="radio" name="Method" id="MethodToken" onclick="methodClicked()"/>
                             <div class="state">
                                 <label>Token</label>
                             </div>
                         </div>
                         <div class="pretty p-default p-curve" style="color: #fff; margin-bottom: 1.3em">
-                            <input type="radio" style="color: #fff" id="MethodPassword" onclick="methodClicked()"/>
+                            <input type="radio" name="Method" style="color: #fff" id="MethodPassword" onclick="methodClicked()"/>
                             <div class="state" style="color: #fff">
                                 <label>Password</label>
                             </div>

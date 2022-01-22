@@ -23,7 +23,7 @@ SERVER_PORT = 6655
 CONF = 'mm_conf.yaml'
 
 def resource_path_prefix():
-	return './'
+	return sys._MEIPASS + '/' if getattr(sys, 'frozen', False) else './'
 
 class WebConsoleServer(HTTPServer):
 	def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True):
@@ -36,7 +36,7 @@ class WebConsoleServer(HTTPServer):
 	def start(self):
 		# Only create icon GUI thread on win32 platform.
 		if sys.platform == 'win32':
-			image = Image.open("web_console/images/favicon.ico")
+			image = Image.open(resource_path_prefix() + "web_console/images/favicon.ico")
 			menu = (MenuItem('HomePage', self.icon_home_page_handler, default=True),
 					MenuItem('Exit', self.icon_exit_handler))
 			self.icon = Icon("MattermostTools", image, "MattermostTools", menu)
