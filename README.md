@@ -41,7 +41,7 @@ Then login with your authentication and change your config on the web page direc
 
 There are some config you can change when using auto reply:
 
-`Reply Interval`: The interval between auto reply(only accept seconds now).
+`Reply Interval`: The interval between auto reply(only accept seconds now). Notice update of `Reply Interval` will reset all auto reply records and means every new message will trigger an auto reply.
 
 `Max Interval`: Extend next auto reply interval to this value(only accept seconds now).
 

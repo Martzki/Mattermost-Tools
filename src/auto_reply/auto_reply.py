@@ -142,6 +142,9 @@ class AutoReplyTool(object):
 					if each == 'extend_message':
 						value = value.replace('\n', '')
 
+					if each == 'reply_interval':
+						self.reply_record = {}
+
 					self.config[each] = value
 
 			self.update_config_cache['updated'] = False
