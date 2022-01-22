@@ -1,142 +1,80 @@
 <!DOCTYPE html>
-<html lang="en" >
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Mattermost Auto Reply Web Console</title>
-
-<!-- <link rel="stylesheet" href="templates/css/style.css"> -->
-<link rel="icon" href="/images/favicon.ico" type="image/x-icon" />
-
-<script type="text/javascript" src="js/auto_reply.js"></script>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>Mattermost Auto Reply Web Console</title>
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" href="css/pretty-checkbox.min.css"/>
+    <link rel="stylesheet" href="css/Roboto.css">
+    <link rel="stylesheet" href="css/style.css">
+    <script type="text/javascript" src="js/auto_reply.js"></script>
 </head>
-<body onload="refresh()">
-  <p>
-    <h1>Mattermost Auto Reply Web Console</h1>
-    <hr/>
-  </p>
 
-  <p>
-    <h2>Authentication</h2>
-    <table border="1" id="AuthenticationTable">
-      <tr>
-        <td>
-          <label>Connect Status:</label>
-        </td>
-        <td>
-          <label id="ConnectStatus">Not connected</label>
-        </td>
-      </tr>
-      <tr>
-        <td>
-          <label>Server:</label>
-        </td>
-        <td>
-          <input type="text" id="ServerURL" placeholder="your.mattermost.server.com">
-        </td>
-      </tr>
-      <tr>
-        <td>
-          <label>Protocol:</label>
-        </td>
-        <td>
-          <input type="radio" name="Protocol" id="HTTPS" class="form__input" checked>HTTPS
-        </td>
-        <td>
-          <input type="radio" name="Protocol" id="HTTP">HTTP
-        </td>
-      </tr>
-      <tr>
-        <td>
-          <label>Authentication Method:</label>
-        </td>
-        <td>
-          <input type="radio" name="Method" id="MethodToken" class="form__input" checked onclick="methodClicked()">Token
-        </td>
-        <td>
-          <input type="radio" name="Method" id="MethodPassword" onclick="methodClicked()">Password
-        </td>
-      </tr>
-      <tr>
-        <td>
-          <label>Token:</label>
-        </td>
-        <td>
-          <input type="password" id="Token">
-        </td>
-      </tr>
-      <tr>
-        <td>
-          <label>Login ID:</label>
-        </td>
-        <td>
-          <input type="text" id="Login_ID" disabled="true">
-        </td>
-      </tr>
-      <tr>
-        <td>
-          <label>Password:</label>
-        </td>
-        <td>
-          <input type="password" id="Password" disabled="true">
-        </td>
-      </tr>
-      <tr>
-        <td colspan="3">
-          <input type="button" id="Login" width="100%" value="Login" onclick="login()">
-        </td>
-      </tr>
-    </table>
-    <hr/>
-  <p>
-
-  <p>
-    <h2>Auto Reply Config</h2>
-    <table border="1">
-      <tr>
-        <td>
-          <label>Auto Reply Interval(Seconeds):</label>
-        </td>
-        <td>
-          <input type="text" id="ReplyInterval" oninput="value=value.replace(/[^\d]/g,'')">
-        </td>
-      </tr>
-      <tr>
-        <td>
-          <label>Auto Reply Max Interval(Seconeds):</label>
-        </td>
-        <td>
-          <input type="text" id="MaxReplyInterval" oninput="value=value.replace(/[^\d]/g,'')">
-        </td>
-      </tr>
-      <tr>
-        <td>
-          <label>Auto Reply Message:</label>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="2">
-          <textarea rows="3" id="ReplyMessage" style="resize:none;" width="100%"></textarea>
-        </td>
-      </tr>
-      <tr>
-        <td>
-          <label>Auto Reply Extend Message:</label>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="2">
-          <textarea rows="3" id="ExtendMessage" style="resize:none;">I got it</textarea>
-        </td>
-      </tr>
-      <tr>
-        <td>
-          <input type="button" id="Apply" value="Apply" width="100%" onclick="applyConfig()">
-        </td>
-      </tr>
-    </table>
-  </p>
-
+<body style="background: linear-gradient(to top, #b76cd2 0, #4c3bb3 100%)" onload="refresh()">
+    <div id="page-container">
+        <div class="all-dela-presets-container">
+            <!-- Preset Begin-->
+            <div class="dela-presets-container-1">
+                <div class="dela-preset-container">
+                    <form class="dela-preset-1-1" style="padding-top: 20em">
+                        <p class="dela-form__title">Mattermost Auto Reply Web Console</p>
+                        <div class="pretty p-switch p-slim p-locked" style="color: #fff; margin-bottom: 1.5em;margin-left: 8.4em;font-size: 1.5em;5em;4em;">
+                            <input type="checkbox" id="ConnectStatusRadio"/>
+                            <div class="state p-success">
+                                <label style="text-indent: -8.5em">Work Status:</label>
+                                <label style="text-indent: 2em" id="ConnectStatus">Running</label>
+                            </div>
+                        </div>
+                        <p class="dela-form__title2">Server:</p>
+                        <input type="text" id="ServerURL" placeholder="your.mattermost.server.com" required="true">
+                        <p class="dela-form__title2" style="margin-bottom: 0.8em">Protocol:</p>
+                        <div class="pretty p-default p-curve" style="color: #fff; margin-bottom: 1.3em; margin-right: 10em">
+                            <input type="radio" id="HTTP" />
+                            <div class="state">
+                                <label>HTTP</label>
+                            </div>
+                        </div>
+                        <div class="pretty p-default p-curve" style="color: #fff; margin-bottom: 1.3em">
+                            <input type="radio" id="HTTPS" />
+                            <div class="state">
+                                <label>HTTPS</label>
+                            </div>
+                        </div>
+                        <p class="dela-form__title2" style="margin-bottom: 0.8em">Authentication Method:</p>
+                        <div class="pretty p-default p-curve" style="color: #fff; margin-bottom: 1.3em; margin-right: 9.8em">
+                            <input type="radio" id="MethodToken" onclick="methodClicked()"/>
+                            <div class="state">
+                                <label>Token</label>
+                            </div>
+                        </div>
+                        <div class="pretty p-default p-curve" style="color: #fff; margin-bottom: 1.3em">
+                            <input type="radio" style="color: #fff" id="MethodPassword" onclick="methodClicked()"/>
+                            <div class="state" style="color: #fff">
+                                <label>Password</label>
+                            </div>
+                        </div>
+                        <p class="dela-form__title2">Token:</p>
+                        <input type="password" id="Token">
+                        <p class="dela-form__title2">Login ID:</p>
+                        <input type="text" id="Login_ID" disabled="true">
+                        <p class="dela-form__title2">Password:</p>
+                        <input type="password" id="Password" disabled="true">
+                        <input type="button" id="Login" style="width: 100%; margin-bottom: 3.3em;" value="Login" onclick="login()">
+                        <p class="dela-form__title2">Auto Reply Interval(Seconeds):</p>
+                        <input type="text" id="ReplyInterval" oninput="value=value.replace(/[^\d]/g,'')" required="true">
+                        <p class="dela-form__title2">Auto Reply Max Interval(Seconeds):</p>
+                        <input type="text" id="MaxReplyInterval" oninput="value=value.replace(/[^\d]/g,'')" required="true">
+                        <p class="dela-form__title2">Auto Reply Message:</p>
+                        <div id="ReplyMessage" class="mytextarea" contenteditable="true"><br/></div>
+                        <p class="dela-form__title2">Auto Reply Extend Message:</p>
+                        <div id="ExtendMessage" class="mytextarea" contenteditable="true"><br/></div>
+                        <input type="button" id="Apply" style="width: 100%" value="Apply Config" onclick="applyConfig()">
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
 

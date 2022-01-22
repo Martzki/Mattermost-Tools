@@ -49,15 +49,14 @@ function login() {
 					 "'reply_message': '" + reply_message + "', " +
 					 "'extend_message': '" + extend_message + "'}}";
 
-	alert(login_data);
 	ajaxDo('login', 'post', login_data, loginHandler);
 }
 
 function applyConfig() {
 	var reply_interval = document.getElementById('ReplyInterval').value;
 	var max_reply_interval = document.getElementById('MaxReplyInterval').value;
-	var reply_message = document.getElementById('ReplyMessage').value;
-	var extend_message = document.getElementById('ExtendMessage').value;
+	var reply_message = document.getElementById('ReplyMessage').innerText;
+	var extend_message = document.getElementById('ExtendMessage').innerText;
 
 	var config_data = "{'reply_config': {" +
 					  "'reply_interval': '" + reply_interval + "', " +
@@ -65,7 +64,6 @@ function applyConfig() {
 					  "'reply_message': '" + reply_message + "', " +
 					  "'extend_message': '" + extend_message + "'}}";
 
-	alert(config_data);
 	ajaxDo('apply_config', 'post', config_data, applyConfigHandler);
 }
 
@@ -82,14 +80,14 @@ function refreshHandler(data) {
 	document.getElementById('Password').value = json.password;
 	document.getElementById('ReplyInterval').value = json.reply_config.reply_interval;
 	document.getElementById('MaxReplyInterval').value = json.reply_config.max_reply_interval;
-	document.getElementById('ReplyMessage').value = json.reply_config.reply_message;
-	document.getElementById('ExtendMessage').value = json.reply_config.extend_message;
+	document.getElementById('ReplyMessage').innerText = json.reply_config.reply_message;
+	document.getElementById('ExtendMessage').innerText = json.reply_config.extend_message;
 
 	methodClicked();
 
 	if (json.work_status == 1) {
-		document.getElementById('ConnectStatus').innerHTML = 'Working';
-		document.getElementById('ConnectStatus').style.color = 'green';
+		document.getElementById('ConnectStatus').innerText = 'Working';
+		document.getElementById('ConnectStatusRadio').checked = true;
 		document.getElementById('ServerURL').disabled = true;
 		document.getElementById('HTTP').disabled = true;
 		document.getElementById('HTTPS').disabled = true;
@@ -101,8 +99,8 @@ function refreshHandler(data) {
 		document.getElementById('Login').disabled = true;
 	}
 	else {
-		document.getElementById('ConnectStatus').innerHTML = 'Not connected';
-		document.getElementById('ConnectStatus').style.color = 'red';
+		document.getElementById('ConnectStatus').innerText = 'Not connected';
+		document.getElementById('ConnectStatusRadio').checked = false;
 	}
 }
 
