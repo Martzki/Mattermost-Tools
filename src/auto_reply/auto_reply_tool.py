@@ -225,6 +225,8 @@ class WebConsoleHandler(BaseHTTPRequestHandler):
 			self.update_config(data)
 		elif self.server.auto_reply_tool.login_status == -1:
 			self.response(-1, "Login failed.")
+			self.server.work_thread.join()
+			self.server.work_thread = None
 
 	def apply_config(self):
 		if self.server.work_thread is None:
