@@ -22,6 +22,9 @@ SERVER_URL = '0.0.0.0'
 SERVER_PORT = 6655
 CONF = 'mm_conf.yaml'
 
+def resource_path_prefix():
+	return './'
+
 class WebConsoleServer(HTTPServer):
 	def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True):
 		HTTPServer.__init__(self, server_address, RequestHandlerClass, bind_and_activate=True)
@@ -84,16 +87,7 @@ class WebConsoleHandler(BaseHTTPRequestHandler):
 		path = result.path
 		args = result.query.split('&') if result.query != '' else []
 
-		if path == '/':
-			self.resource_handler('web_console/index.html', 'text/html')
-		elif path == '/js/auto_reply.js':
-			self.resource_handler('web_console/js/auto_reply.js', 'application/x-javascript')
-		elif path == '/images/favicon.ico':
-			self.resource_handler('web_console/images/favicon.ico', 'image/x-icon')
-		elif path == '/refresh':
-			self.refresh_handler()
-		else:
-			self.response(-1, "Invalid request: %s." % (path))
+		self.resource_handler(path)
 
 	def do_POST(self):
 		result = urllib.parse.urlparse(self.path)
@@ -117,19 +111,36 @@ class WebConsoleHandler(BaseHTTPRequestHandler):
 		self.end_headers()
 		self.wfile.write(bytes(json.dumps(resp), encoding='utf-8'))
 
-	def resource_handler(self, path, header):
+	def resource_handler(self, path):
+		if path == '/' or path == '/refresh':
+			path = '/index.html'
+
+		path = resource_path_prefix() + 'web_console' + path
+
+		if not os.path.exists(path):
+			self.send_response(404)
+			self.send_header("Content-type", "text/html")
+			self.end_headers()
+			self.wfile.write(bytes("page not found", encoding='utf-8'))
+			return
+
+		content_type = "text/html"
+		if path.endswith(".ico"):
+			content_type = "image/x-icon"
+		elif path.endswith(".js"):
+			content_type = "application/x-javascript"
+		elif path.endswith(".css"):
+			content_type = "text/css"
+		elif path.endswith(".svg"):
+			content_type = "image/svg+xml"
+
 		self.send_response(200)
-		self.send_header("Content-type", header)
+		self.send_header("Content-type", content_type)
 		self.end_headers()
 
-		if header == 'image/x-icon':
-			with open(path, 'rb') as resource:
+		with open(path, 'rb') as resource:
 				for line in resource.readlines():
 					self.wfile.write(bytes(line))
-		else:
-			with open(path, 'r') as resource:
-				for line in resource.readlines():
-					self.wfile.write(bytes(line, encoding='utf-8'))
 
 	def refresh_handler(self):
 		try:
