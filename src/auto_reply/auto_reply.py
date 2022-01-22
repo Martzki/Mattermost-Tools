@@ -14,8 +14,8 @@ class AutoReplyTool(object):
 		self.mm_driver = Driver(options)
 		self.username = ''
 		self.config = {
-			'reply_message': reply_message,
-			'extend_message': extend_message,
+			'reply_message': reply_message[:-1] if reply_message.endswith('\n') else reply_message,
+			'extend_message': extend_message.replace('\n', ''),
 			'reply_interval': reply_interval,
 			'max_reply_interval': max_reply_interval
 		}
@@ -135,7 +135,14 @@ class AutoReplyTool(object):
 		if self.update_config_cache['updated']:
 			for each in self.config:
 				if each in self.update_config_cache:
-					self.config[each] = self.update_config_cache[each]
+					value = self.update_config_cache[each]
+					if each == 'reply_message' and value.endswith('\n'):
+						value = value[:-1]
+
+					if each == 'extend_message':
+						value = value.replace('\n', '')
+
+					self.config[each] = value
 
 			self.update_config_cache['updated'] = False
 

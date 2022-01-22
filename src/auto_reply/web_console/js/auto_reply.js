@@ -31,7 +31,7 @@ function login() {
 	var reply_interval = document.getElementById('ReplyInterval').value;
 	var max_reply_interval = document.getElementById('MaxReplyInterval').value;
 	var reply_message = document.getElementById('ReplyMessage').innerText;
-	var extend_message = document.getElementById('ExtendMessage').innerText;
+	var extend_message = document.getElementById('ExtendMessage').value;
 
 	if (reply_interval == '' || max_reply_interval == '') {
 		alert("reply_interval and max_reply_interval is required.")
@@ -59,7 +59,7 @@ function applyConfig() {
 	var reply_interval = document.getElementById('ReplyInterval').value;
 	var max_reply_interval = document.getElementById('MaxReplyInterval').value;
 	var reply_message = document.getElementById('ReplyMessage').innerText;
-	var extend_message = document.getElementById('ExtendMessage').innerText;
+	var extend_message = document.getElementById('ExtendMessage').value;
 
 	var config_data = "{'reply_config': {" +
 					  "'reply_interval': '" + reply_interval + "', " +
@@ -89,7 +89,7 @@ function refreshHandler(data) {
 	document.getElementById('ReplyInterval').value = json.reply_config.reply_interval;
 	document.getElementById('MaxReplyInterval').value = json.reply_config.max_reply_interval;
 	document.getElementById('ReplyMessage').innerText = json.reply_config.reply_message;
-	document.getElementById('ExtendMessage').innerText = json.reply_config.extend_message;
+	document.getElementById('ExtendMessage').value = json.reply_config.extend_message;
 
 	methodClicked();
 
