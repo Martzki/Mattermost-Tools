@@ -2,14 +2,15 @@
 # coding=utf-8
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from auto_reply import AutoReplyTool
+import argparse
 import logging
 import json
-import yaml
-import urllib
-import threading
 import os
-import time
 import sys
+import threading
+import time
+import urllib
+import yaml
 
 if sys.platform == 'win32':
 	from pystray import MenuItem
@@ -18,9 +19,10 @@ if sys.platform == 'win32':
 	import webbrowser
 
 
-SERVER_URL = '0.0.0.0'
+SERVER_URL = '127.0.0.1'
 SERVER_PORT = 6655
 CONF = 'mm_conf.yaml'
+LOG_FILE = 'MattermostTools.log'
 
 def resource_path_prefix():
 	return sys._MEIPASS + '/' if getattr(sys, 'frozen', False) else './'
@@ -82,6 +84,12 @@ class WebConsoleServer(HTTPServer):
 
 
 class WebConsoleHandler(BaseHTTPRequestHandler):
+	def log_message(self, format, *args):
+		logging.info('%s - %s' % (self.address_string(), format%args))
+
+	def log_error(self, format, *args):
+		logging.error('%s - %s' % (self.address_string(), format%args))
+
 	def do_GET(self):
 		result = urllib.parse.urlparse(self.path)
 		path = result.path
@@ -257,7 +265,21 @@ class WebConsoleHandler(BaseHTTPRequestHandler):
 
 
 if __name__ == '__main__':
-	logging.basicConfig(level=logging.INFO)
+	arg_parser = argparse.ArgumentParser()
+
+	arg_parser.add_argument('--debug', required=False, action="store_const", const="True", help='Enable debug mode.')
+	arg_parser.add_argument('--address', required=False, help='Listen on this address. Default: 127.0.0.1.')
+	arg_parser.add_argument('--port', required=False, help='Listen on this port. Default: 6655.')
+
+	args = arg_parser.parse_args()
+
+	server_url = SERVER_URL if args.address is None else args.address
+	server_port = SERVER_PORT if args.port is None else int(args.port)
+
+	logging.basicConfig(level=logging.INFO if args.debug is None else logging.DEBUG,
+						filename=None if args.debug is None else LOG_FILE,
+						filemode='a',
+						format='%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s')
 
 	# Init default config.
 	if not os.path.exists(CONF):
@@ -277,16 +299,16 @@ if __name__ == '__main__':
 		try:
 			with open(CONF, 'w', encoding='utf-8') as conf:
 				yaml.dump(data, conf, sort_keys=False)
-				conf.flush()
+				logging.info("Init default config: %s done." % (CONF))
 		except Exception as e:
 			logging.critical("Init config %s failed: %s." % (CONF, e))
 			exit(-1)
 
 	try:
-		web_console = WebConsoleServer((SERVER_URL, SERVER_PORT), WebConsoleHandler)
+		web_console = WebConsoleServer((server_url, server_port), WebConsoleHandler)
 	except OSError as e:
 		logging.critical("Init web console server(%s:%s) failed: %s." %\
-						 (SERVER_URL, SERVER_PORT))
+						 (server_url, server_port))
 		exit(-1)
 
 	web_console.start()
