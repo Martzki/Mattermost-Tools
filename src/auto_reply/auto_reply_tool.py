@@ -87,7 +87,10 @@ class WebConsoleHandler(BaseHTTPRequestHandler):
 		path = result.path
 		args = result.query.split('&') if result.query != '' else []
 
-		self.resource_handler(path)
+		if path == '/refresh':
+			self.refresh_handler()
+		else:
+			self.resource_handler(path)
 
 	def do_POST(self):
 		result = urllib.parse.urlparse(self.path)
@@ -112,7 +115,7 @@ class WebConsoleHandler(BaseHTTPRequestHandler):
 		self.wfile.write(bytes(json.dumps(resp), encoding='utf-8'))
 
 	def resource_handler(self, path):
-		if path == '/' or path == '/refresh':
+		if path == '/':
 			path = '/index.html'
 
 		path = resource_path_prefix() + 'web_console' + path
