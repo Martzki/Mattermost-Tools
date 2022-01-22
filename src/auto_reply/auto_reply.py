@@ -111,7 +111,7 @@ class AutoReplyTool(object):
 
 		self.reply_record[channel_id] = now_time
 
-		extend_prompt = '\nSend `%s` to extend auto reply interval to %s.(Default: %s)' % \
+		extend_prompt = '\nSend `%s` to extend auto reply interval to `%s`.(Default: `%s`)' % \
 						(self.config['extend_message'], datetime.timedelta(seconds=int(self.config['max_reply_interval'])),
 						 datetime.timedelta(seconds=int(self.config['reply_interval'])))
 
