@@ -73,7 +73,7 @@ body {
 }
 
 .dela-presets-container-1 .dela-preset-1-1 input[type="email"],    .dela-presets-container-1 .dela-preset-1-1 input[type="password"],    .dela-presets-container-1 .dela-preset-1-1 input[type="text"] {
-  color: #fff;
+  color: rgba(255, 255, 255, 0.5);
   font-family: Roboto;
   font-size: 1em;
   font-weight: 300;
@@ -87,16 +87,17 @@ body {
 }
 
 .dela-presets-container-1 .dela-preset-1-1 input[type="email"]:valid,    .dela-presets-container-1 .dela-preset-1-1 input[type="password"]:valid,    .dela-presets-container-1 .dela-preset-1-1 input[type="text"]:valid {
+  color: #fff;
   border-bottom: 0.063em solid #fff;
   border-radius: 0;
 }
 
 .dela-presets-container-1 .dela-preset-1-1 ::-webkit-input-placeholder {
-  color: #fff;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .dela-presets-container-1 .dela-preset-1-1 ::-moz-placeholder {
-  color: #fff;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .dela-presets-container-1 .dela-preset-1-1 .dela-form__checkbox {

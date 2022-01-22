@@ -5,9 +5,12 @@ function methodClicked() {
 
 	if (document.getElementById('MethodToken').checked) {
 		value = false;
+		document.getElementById('Login_ID').value = '';
+		document.getElementById('Password').value = '';
 	}
 	else{
 		value = true;
+		document.getElementById('Token').value = '';
 	}
 
 	document.getElementById('Token').disabled = value;
@@ -27,8 +30,8 @@ function login() {
 	var password = document.getElementById('Password').value;
 	var reply_interval = document.getElementById('ReplyInterval').value;
 	var max_reply_interval = document.getElementById('MaxReplyInterval').value;
-	var reply_message = document.getElementById('ReplyMessage').value;
-	var extend_message = document.getElementById('ExtendMessage').value;
+	var reply_message = document.getElementById('ReplyMessage').innerText;
+	var extend_message = document.getElementById('ExtendMessage').innerText;
 
 	if (reply_interval == '' || max_reply_interval == '') {
 		alert("reply_interval and max_reply_interval is required.")
@@ -70,14 +73,19 @@ function applyConfig() {
 function refreshHandler(data) {
 	var json = JSON.parse(data);
 
-	document.getElementById('ServerURL').value = json.url;
+	if (json.url != "undefined")
+		document.getElementById('ServerURL').value = json.url;
 	document.getElementById('HTTP').checked = (json.protocol == 'HTTP');
 	document.getElementById('HTTPS').checked = !(json.protocol == 'HTTP');
-	document.getElementById('MethodToken').checked = !(json.token == '');
-	document.getElementById('MethodPassword').checked = (json.token == '');
-	document.getElementById('Token').value = json.token;
-	document.getElementById('Login_ID').value = json.login_id;
-	document.getElementById('Password').value = json.password;
+	document.getElementById('MethodToken').checked = !(json.token == '' || json.token == 'undefined');
+	document.getElementById('MethodPassword').checked = (json.token == '' || json.token == 'undefined');
+	console.log(json.token)
+	if (json.token != "undefined")
+		document.getElementById('Token').value = json.token;
+	if (json.login_id != "undefined")
+		document.getElementById('Login_ID').value = json.login_id;
+	if (json.password != "undefined")
+		document.getElementById('Password').value = json.password;
 	document.getElementById('ReplyInterval').value = json.reply_config.reply_interval;
 	document.getElementById('MaxReplyInterval').value = json.reply_config.max_reply_interval;
 	document.getElementById('ReplyMessage').innerText = json.reply_config.reply_message;
@@ -107,23 +115,27 @@ function refreshHandler(data) {
 function loginHandler(data) {
 	var json = JSON.parse(data);
 
-	if (json.result == -1)
+	if (json.result == -1) {
 		alert('Login failed.');
-	else
+	}
+	else {
 		alert('Login successed.')
+		location.reload();
+	}
 
-	location.reload();
 }
 
 function applyConfigHandler(data) {
 	var json = JSON.parse(data);
 
-	if (json.result == -1)
+	if (json.result == -1) {
 		alert('Apply config failed.');
-	else
+	}
+	else {
 		alert('Apply config successed.')
+		location.reload();
+	}
 
-	location.reload();
 }
 
 function ajaxObject() {

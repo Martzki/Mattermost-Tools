@@ -284,11 +284,11 @@ if __name__ == '__main__':
 	# Init default config.
 	if not os.path.exists(CONF):
 		data = {
-			'url': 'your.mattermost.server.com',
-			'protocol': 'HTTPS',
-			'login_id': 'login_id',
-			'password': 'password',
-			'token': 'token',
+			'url': 'undefined',
+			'protocol': 'HTTP',
+			'login_id': 'undefined',
+			'password': 'undefined',
+			'token': 'undefined',
 			'reply_config': {
 				'reply_interval': 1800,
 				'max_reply_interval': 86400,
