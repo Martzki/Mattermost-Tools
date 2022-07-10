@@ -166,6 +166,7 @@ class WebConsoleHandler(BaseHTTPRequestHandler):
 				max_reply_interval = conf['reply_config']['max_reply_interval']
 				reply_message = conf['reply_config']['reply_message']
 				extend_message = conf['reply_config']['extend_message']
+				whitelist = conf['reply_config']['whitelist']
 
 			resp = {
 				'url': url,
@@ -177,7 +178,8 @@ class WebConsoleHandler(BaseHTTPRequestHandler):
 					'reply_interval': reply_interval,
 					'max_reply_interval': max_reply_interval,
 					'reply_message': reply_message,
-					'extend_message': extend_message
+					'extend_message': extend_message,
+					'whitelist': whitelist
 				},
 				'work_status': self.server.auto_reply_tool.login_status \
 								if self.server.auto_reply_tool is not None else -1
@@ -211,12 +213,14 @@ class WebConsoleHandler(BaseHTTPRequestHandler):
 		extend_message = data['reply_config']['extend_message']
 		reply_interval = data['reply_config']['reply_interval']
 		max_reply_interval = data['reply_config']['max_reply_interval']
+		whitelist = data['reply_config']['whitelist'].split()
 
 		self.server.auto_reply_tool = AutoReplyTool(options,
 							 reply_message=reply_message,
 							 extend_message=extend_message,
 							 reply_interval=reply_interval,
-							 max_reply_interval=max_reply_interval)
+							 max_reply_interval=max_reply_interval,
+							 whitelist=whitelist)
 
 		self.server.work_thread = threading.Thread(target=self.server.auto_reply_tool.login)
 		self.server.work_thread.start()
@@ -293,7 +297,8 @@ if __name__ == '__main__':
 				'reply_interval': 1800,
 				'max_reply_interval': 86400,
 				'reply_message': 'This is an auto reply message.',
-				'extend_message': 'I got it'
+				'extend_message': 'I got it',
+				'whitelist': ''
 			}
 		}
 		try:

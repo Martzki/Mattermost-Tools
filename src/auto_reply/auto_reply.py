@@ -9,7 +9,7 @@ import asyncio
 
 class AutoReplyTool(object):
 	"""docstring for AutoReplyTool"""
-	def __init__(self, options, reply_message, extend_message, reply_interval, max_reply_interval):
+	def __init__(self, options, reply_message, extend_message, reply_interval, max_reply_interval, whitelist):
 		super(AutoReplyTool, self).__init__()
 		self.mm_driver = Driver(options)
 		self.username = ''
@@ -17,7 +17,8 @@ class AutoReplyTool(object):
 			'reply_message': reply_message[:-1] if reply_message.endswith('\n') else reply_message,
 			'extend_message': extend_message.replace('\n', ''),
 			'reply_interval': reply_interval,
-			'max_reply_interval': max_reply_interval
+			'max_reply_interval': max_reply_interval,
+			'whitelist': whitelist
 		}
 		self.update_config_cache = {'updated': False}
 		self.reply_record = {}
@@ -36,7 +37,8 @@ class AutoReplyTool(object):
 			self.login_status = -1
 			return
 
-		self.username = '@' + self.mm_driver.client.username
+		self.username = self.mm_driver.client.username
+		self.config['whitelist'].append(self.username)
 
 		self.event_loop = asyncio.new_event_loop()
 		asyncio.set_event_loop(self.event_loop)
@@ -72,7 +74,8 @@ class AutoReplyTool(object):
 		if 'sender_name' not in msg['data']:
 			return None
 
-		if msg['data']['sender_name'] == self.username:
+		# Skip '@'.
+		if msg['data']['sender_name'][1:] in self.config['whitelist']:
 			return None
 
 		return json.loads(msg['data']['post'])
@@ -138,22 +141,30 @@ class AutoReplyTool(object):
 		self.update_config_cache['updated'] = True
 
 	def do_update_config(self):
-		if self.update_config_cache['updated']:
-			for each in self.config:
-				if each in self.update_config_cache:
-					value = self.update_config_cache[each]
-					if each == 'reply_message' and value.endswith('\n'):
-						value = value[:-1]
+		if not self.update_config_cache['updated']:
+			return
 
-					if each == 'extend_message':
-						value = value.replace('\n', '')
+		for each in self.config:
+			if each not in self.update_config_cache:
+				continue
 
-					if each == 'reply_interval':
-						self.reply_record = {}
+			value = self.update_config_cache[each]
+			if each == 'reply_message' and value.endswith('\n'):
+				value = value[:-1]
 
-					self.config[each] = value
+			if each == 'extend_message':
+				value = value.replace('\n', '')
 
-			self.update_config_cache['updated'] = False
+			if each == 'reply_interval' or each == 'max_reply_interval':
+				self.reply_record = {}
+
+			if each == 'whitelist':
+				value = value.split()
+				value.append(self.username)
+
+			self.config[each] = value
+
+		self.update_config_cache['updated'] = False
 
 	# TODO: clean self.reply_record periodically.
 	def clean_cache(self):

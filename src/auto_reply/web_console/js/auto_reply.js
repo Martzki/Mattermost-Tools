@@ -32,6 +32,7 @@ function login() {
 	var max_reply_interval = document.getElementById('MaxReplyInterval').value;
 	var reply_message = document.getElementById('ReplyMessage').innerText;
 	var extend_message = document.getElementById('ExtendMessage').value;
+	var whitelist = document.getElementById('WhiteList').value;
 
 	if (reply_interval == '' || max_reply_interval == '') {
 		alert("reply_interval and max_reply_interval is required.")
@@ -50,7 +51,8 @@ function login() {
 					 "'reply_interval': '" + reply_interval + "', " +
 					 "'max_reply_interval': '" + max_reply_interval + "', " +
 					 "'reply_message': '" + reply_message + "', " +
-					 "'extend_message': '" + extend_message + "'}}";
+					 "'extend_message': '" + extend_message + "', " +
+					 "'whitelist': '" + whitelist + "'}}";
 
 	ajaxDo('login', 'post', login_data, loginHandler);
 }
@@ -60,12 +62,14 @@ function applyConfig() {
 	var max_reply_interval = document.getElementById('MaxReplyInterval').value;
 	var reply_message = document.getElementById('ReplyMessage').innerText;
 	var extend_message = document.getElementById('ExtendMessage').value;
+	var whitelist = document.getElementById('WhiteList').value;
 
 	var config_data = "{'reply_config': {" +
 					  "'reply_interval': '" + reply_interval + "', " +
 					  "'max_reply_interval': '" + max_reply_interval + "', " +
 					  "'reply_message': '" + reply_message + "', " +
-					  "'extend_message': '" + extend_message + "'}}";
+					  "'extend_message': '" + extend_message + "', " +
+					  "'whitelist': '" + whitelist + "'}}";
 
 	ajaxDo('apply_config', 'post', config_data, applyConfigHandler);
 }
@@ -90,6 +94,7 @@ function refreshHandler(data) {
 	document.getElementById('MaxReplyInterval').value = json.reply_config.max_reply_interval;
 	document.getElementById('ReplyMessage').innerText = json.reply_config.reply_message;
 	document.getElementById('ExtendMessage').value = json.reply_config.extend_message;
+	document.getElementById('WhiteList').value = json.reply_config.whitelist;
 
 	methodClicked();
 
