@@ -44,11 +44,10 @@ class AutoReplyTool(object):
 		self.mm_driver.init_websocket(self.mm_event_handler)
 		# self.event_loop.close()
 
-
 	async def mm_event_handler(self, message):
 		msg = json.loads(message)
 
-		logging.debug(json.dumps(msg, indent=2))
+		logging.debug('mm msg: %s' % json.dumps(msg, indent=2))
 
 		post = self.post_handler(msg)
 
@@ -98,27 +97,34 @@ class AutoReplyTool(object):
 		channel_id = post['channel_id']
 		message = post['message']
 
-		now_time = datetime.datetime.now()
+		if channel_id not in self.reply_record:
+			self.reply_record[channel_id] = {'extend': False}
 
 		if message == self.config['extend_message']:
-			self.reply_record[channel_id] = now_time + datetime.timedelta(seconds=int(self.config['max_reply_interval']) - int(self.config['reply_interval']))
+			self.reply_record[channel_id]['extend'] = True
+			return
 
-		if channel_id in self.reply_record:
-			delta = (now_time - self.reply_record[channel_id]).seconds
-			if now_time < self.reply_record[channel_id] or \
-				(now_time > self.reply_record[channel_id] and delta < int(self.config['reply_interval'])):
+		interval = self.config['max_reply_interval'] if self.reply_record[channel_id]['extend'] else self.config['reply_interval']
+		prev = self.mm_driver.posts.get_posts_for_channel(channel_id, 'before=%s&per_page=1' % (post['id']))
+
+		if len(prev['order']) == 1:
+			prev_create_at = prev['posts'][prev['order'][0]]['create_at'] / 1000
+			create_at = post['create_at'] / 1000
+
+			logging.debug("prev_create_at: %s, create_at: %s, interval: %s." % (prev_create_at, create_at, interval))
+			if create_at - prev_create_at < float(interval):
 				return
 
-		self.reply_record[channel_id] = now_time
+		self.reply_record[channel_id]['extend'] = False
 
-		extend_prompt = '\nSend `%s` to extend auto reply interval to `%s`.(Default: `%s`)' % \
+		extend_prompt = '\nSend `%s` to extend auto reply interval to `%s`. (Default: `%s`)' % \
 						(self.config['extend_message'], datetime.timedelta(seconds=int(self.config['max_reply_interval'])),
 						 datetime.timedelta(seconds=int(self.config['reply_interval'])))
 
 		self.mm_driver.posts.create_post({'channel_id': channel_id,
 										  'message': ('##### [Auto Reply] ' + self.config['reply_message'] + extend_prompt).replace('\n', '\n##### [Auto Reply] ')})
 
-		## Mark new post as unread so that we won't lose notification.
+		# Mark new post unread so that we won't lose notification.
 		self.mm_driver.client.make_request('post', '/users/%s/posts/%s/set_unread' % (self.mm_driver.client.userid, post['id']))
 
 	def update_config(self, config):
