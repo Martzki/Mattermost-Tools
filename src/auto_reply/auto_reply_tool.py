@@ -5,7 +5,9 @@ from auto_reply import AutoReplyTool
 import argparse
 import logging
 import json
+import multiprocessing
 import os
+import signal
 import sys
 import threading
 import time
@@ -27,15 +29,34 @@ LOG_FILE = 'MattermostTools.log'
 def resource_path_prefix():
 	return sys._MEIPASS + '/' if getattr(sys, 'frozen', False) else './'
 
+
 class WebConsoleServer(HTTPServer):
 	def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True):
 		HTTPServer.__init__(self, server_address, RequestHandlerClass, bind_and_activate=True)
 		self.auto_reply_tool = None
-		self.work_thread = None
-		self.gui_thread = None
+		self.work_proc = None
 		self.icon = None
+		self.icon_thread = None
+		self.icon_stop = True
+		self.icon_clicked = False
+		self.relogin_event = None
+		self.stop_event = multiprocessing.Event()
 
-	def start(self):
+	def stop(self):
+		if type(self.work_proc) == multiprocessing.Process:
+			self.stop_event.set()
+			self.work_proc.join()
+			logging.info('Stop auto reply work process done.')
+
+		if type(self.icon_thread) == threading.Thread:
+			self.icon_stop = True
+			self.icon.stop()
+			logging.info('Stop icon thread done.')
+
+		self.shutdown()
+		logging.info('Stop web console server done.')
+
+	def icon_start(self):
 		# Only create icon GUI thread on win32 platform.
 		if sys.platform == 'win32':
 			image = Image.open(resource_path_prefix() + "web_console/images/favicon.ico")
@@ -43,41 +64,41 @@ class WebConsoleServer(HTTPServer):
 					MenuItem('Exit', self.icon_exit_handler))
 			self.icon = Icon("MattermostTools", image, "MattermostTools", menu)
 
-			self.gui_thread = threading.Thread(target=self.icon.run, args=[self.icon_setup])
-			self.gui_thread.start()
+			self.relogin_event = multiprocessing.Event()
 
-		try:
-			self.serve_forever()
-		except KeyboardInterrupt:
-			self.stop()
-			exit(0)
-
-	def stop(self):
-		# TODO: the code below can't stop gracefully.
-		# if type(self.auto_reply_tool) == AutoReplyTool:
-		# 	self.auto_reply_tool.stop()
-		# 	logging.info('Stop auto reply tool done.')
-
-		# if type(self.work_thread) == threading.Thread:
-		# 	self.work_thread.join()
-		# 	logging.info('Stop auto reply work thread done.')
-
-		if type(self.gui_thread) == threading.Thread:
-			self.icon.stop()
-			logging.info('Stop GUI thread done.')
-
-		self.shutdown()
-		logging.info('Stop web console server done.')
+			self.icon_thread = threading.Thread(target=self.icon.run, args=[self.icon_setup])
+			self.icon_thread.start()
 
 	def icon_setup(self, icon):
+		self.icon_stop = False
 		icon.visible = True
-		icon.notify("Web Console is working at: http://127.0.0.1:%s" % \
-					(SERVER_PORT), "MattermostTools")
+		icon.notify("Web Console is working at: http://%s:%s" % \
+					(self.server_address[0], self.server_address[1]), "MattermostTools")
 
-		webbrowser.open("http://127.0.0.1:%s" % (SERVER_PORT))
+		webbrowser.open("http://%s:%s" % (self.server_address[0], self.server_address[1]))
+
+		while not self.icon_stop:
+			if not self.relogin_event.wait(3):
+				continue
+
+			# Notify every 60s.
+			last_notify = 0
+			while not self.icon_stop and not self.icon_clicked:
+				if time.time() - last_notify > 60:
+					icon.notify("Authentication is invalid, need to login again.", "MattermostTools")
+					last_notify = time.time()
+
+				time.sleep(3)
+
+			# Notify finished.
+			icon.remove_notification()
+			self.icon_clicked = False
+			self.relogin_event.clear()
 
 	def icon_home_page_handler(self):
-		webbrowser.open("http://127.0.0.1:%s" % (SERVER_PORT))
+		self.icon_clicked = True
+		self.relogin_event.clear()
+		webbrowser.open("http://%s:%s" % (self.server_address[0], self.server_address[1]))
 
 	def icon_exit_handler(self):
 		self.stop()
@@ -181,8 +202,7 @@ class WebConsoleHandler(BaseHTTPRequestHandler):
 					'extend_message': extend_message,
 					'whitelist': whitelist
 				},
-				'work_status': self.server.auto_reply_tool.login_status \
-								if self.server.auto_reply_tool is not None else -1
+				'work_status': 1 if self.server.work_proc and self.server.work_proc.is_alive() else -1
 			}
 
 			self.send_response(200)
@@ -193,7 +213,7 @@ class WebConsoleHandler(BaseHTTPRequestHandler):
 			self.response(-1, 'Refresh failed: %s' % (e))
 
 	def login(self):
-		if self.server.work_thread is not None:
+		if self.server.work_proc and self.server.work_proc.is_alive():
 			self.response(0, "Login successed.")
 			return
 
@@ -207,7 +227,9 @@ class WebConsoleHandler(BaseHTTPRequestHandler):
 				   'scheme': data['protocol'].lower(),
 				   'login_id': data['login_id'],
 				   'password': data['password'],
-				   'token': data['token']}
+				   'token': data['token'],
+				   'timeout': 3,
+				   'debug': False}
 
 		reply_message = data['reply_config']['reply_message']
 		extend_message = data['reply_config']['extend_message']
@@ -220,28 +242,24 @@ class WebConsoleHandler(BaseHTTPRequestHandler):
 							 extend_message=extend_message,
 							 reply_interval=reply_interval,
 							 max_reply_interval=max_reply_interval,
-							 whitelist=whitelist)
+							 whitelist=whitelist,
+							 relogin_event=self.server.relogin_event,
+							 stop_event=self.server.stop_event)
 
-		self.server.work_thread = threading.Thread(target=self.server.auto_reply_tool.login)
-		self.server.work_thread.start()
-
-		for i in range(100):
-			if self.server.auto_reply_tool.login_status == 1 or \
-				self.server.auto_reply_tool.login_status == -1:
-				break
-
-			time.sleep(0.1)
-
-		if self.server.auto_reply_tool.login_status == 1:
-			self.response(0, "Login successed.")
-			self.update_config(data)
-		elif self.server.auto_reply_tool.login_status == -1:
+		if not self.server.auto_reply_tool.login():
+			logging.error("Login failed.")
 			self.response(-1, "Login failed.")
-			self.server.work_thread.join()
-			self.server.work_thread = None
+			self.server.work_proc = None
+			return
+
+		self.server.work_proc = multiprocessing.Process(target=self.server.auto_reply_tool.work)
+		self.server.work_proc.start()
+
+		self.response(0, "Login successed.")
+		self.update_config(data)
 
 	def apply_config(self):
-		if self.server.work_thread is None:
+		if self.server.work_proc is None:
 			self.response(-1, "Apply config failed: Login first and try again.")
 			return
 
@@ -310,10 +328,16 @@ if __name__ == '__main__':
 			exit(-1)
 
 	try:
+		logging.info("Init web console at: %s:%s." % (server_url, server_port))
 		web_console = WebConsoleServer((server_url, server_port), WebConsoleHandler)
 	except OSError as e:
-		logging.critical("Init web console server(%s:%s) failed: %s." %\
+		logging.critical("Init web console at %s:%s failed: %s." %\
 						 (server_url, server_port))
 		exit(-1)
 
-	web_console.start()
+	try:
+		web_console.icon_start()
+		logging.info("Start web console.")
+		web_console.serve_forever()
+	except KeyboardInterrupt:
+		web_console.stop()

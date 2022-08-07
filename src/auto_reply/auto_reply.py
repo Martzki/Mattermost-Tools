@@ -1,15 +1,19 @@
 #!/usr/bin/python3
 # coding=utf-8
 from mattermostdriver import Driver
+from mattermostdriver.exceptions import NoAccessTokenProvided
 import datetime
-import json
 import logging
-import asyncio
+import json
+import signal
+import threading
 
 
 class AutoReplyTool(object):
 	"""docstring for AutoReplyTool"""
-	def __init__(self, options, reply_message, extend_message, reply_interval, max_reply_interval, whitelist):
+	def __init__(self, options, reply_message, extend_message,
+				 reply_interval, max_reply_interval, whitelist,
+				 relogin_event, stop_event):
 		super(AutoReplyTool, self).__init__()
 		self.mm_driver = Driver(options)
 		self.username = ''
@@ -22,29 +26,36 @@ class AutoReplyTool(object):
 		}
 		self.update_config_cache = {'updated': False}
 		self.reply_record = {}
-		self.login_status = 0 # 0: uninitailized, 1: successed, -1 failed
-		self.event_loop = None
+		self.relogin_event = relogin_event
+		self.stop_event = stop_event
 
-	def stop(self):
+	def stop_handler(self):
+		self.stop_event.wait()
 		self.mm_driver.disconnect()
+		logging.info('Stop auto reply tool done.')
 
 	def login(self):
 		try:
 			self.mm_driver.login()
-			self.login_status = 1
 		except Exception as e:
 			logging.error("Login failed: %s" % (e))
-			self.login_status = -1
-			return
+			return False
 
 		self.username = self.mm_driver.client.username
 		self.config['whitelist'].append(self.username)
 
-		self.event_loop = asyncio.new_event_loop()
-		asyncio.set_event_loop(self.event_loop)
+		return True
+
+	def work(self):
+		def ignore_signal(sig, frame):
+			logging.info("Ignore signal: %s frame: %s." % (sig, frame))
+
+		signal.signal(signal.SIGINT, ignore_signal)
+
+		stop = threading.Thread(target=self.stop_handler)
+		stop.start()
 
 		self.mm_driver.init_websocket(self.mm_event_handler)
-		# self.event_loop.close()
 
 	async def mm_event_handler(self, message):
 		msg = json.loads(message)
@@ -56,7 +67,15 @@ class AutoReplyTool(object):
 		if post is None:
 			return
 
-		self.auto_reply_handler(post)
+		try:
+			self.auto_reply_handler(post)
+		except NoAccessTokenProvided as e:
+			logging.error('Authentication is invalid: %s' % e)
+
+			if self.relogin_event:
+				self.relogin_event.set()
+
+			self.mm_driver.disconnect()
 
 	def post_handler(self, msg):
 		if 'event' not in msg:
