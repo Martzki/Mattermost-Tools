@@ -23,16 +23,16 @@ function refresh() {
 }
 
 function login() {
-	var url = document.getElementById('ServerURL').value;
+	var url = document.getElementById('ServerURL').value.replaceAll("'", "\\'");
 	var protocol = "HTTPS"
-	var token = document.getElementById('Token').value;
-	var login_id = document.getElementById('Login_ID').value;
-	var password = document.getElementById('Password').value;
-	var reply_interval = document.getElementById('ReplyInterval').value;
-	var max_reply_interval = document.getElementById('MaxReplyInterval').value;
-	var reply_message = document.getElementById('ReplyMessage').innerText;
-	var extend_message = document.getElementById('ExtendMessage').value;
-	var whitelist = document.getElementById('WhiteList').value;
+	var token = document.getElementById('Token').value.replaceAll("'", "\\'");
+	var login_id = document.getElementById('Login_ID').value.replaceAll("'", "\\'");
+	var password = document.getElementById('Password').value.replaceAll("'", "\\'");
+	var reply_interval = document.getElementById('ReplyInterval').value.replaceAll("'", "\\'");
+	var max_reply_interval = document.getElementById('MaxReplyInterval').value.replaceAll("'", "\\'");
+	var reply_message = document.getElementById('ReplyMessage').innerText.replaceAll("'", "\\'");
+	var extend_message = document.getElementById('ExtendMessage').value.replaceAll("'", "\\'");
+	var whitelist = document.getElementById('WhiteList').value.replaceAll("'", "\\'");
 
 	if (reply_interval == '' || max_reply_interval == '') {
 		alert("reply_interval and max_reply_interval is required.")
@@ -54,15 +54,17 @@ function login() {
 					 "'extend_message': '" + extend_message + "', " +
 					 "'whitelist': '" + whitelist + "'}}";
 
+	login_data = login_data.replaceAll("\n", "\\n");
+
 	ajaxDo('login', 'post', login_data, loginHandler);
 }
 
 function applyConfig() {
-	var reply_interval = document.getElementById('ReplyInterval').value;
-	var max_reply_interval = document.getElementById('MaxReplyInterval').value;
-	var reply_message = document.getElementById('ReplyMessage').innerText;
-	var extend_message = document.getElementById('ExtendMessage').value;
-	var whitelist = document.getElementById('WhiteList').value;
+	var reply_interval = document.getElementById('ReplyInterval').value.replaceAll("'", "\\'");
+	var max_reply_interval = document.getElementById('MaxReplyInterval').value.replaceAll("'", "\\'");
+	var reply_message = document.getElementById('ReplyMessage').innerText.replaceAll("'", "\\'");
+	var extend_message = document.getElementById('ExtendMessage').value.replaceAll("'", "\\'");
+	var whitelist = document.getElementById('WhiteList').value.replaceAll("'", "\\'");
 
 	var config_data = "{'reply_config': {" +
 					  "'reply_interval': '" + reply_interval + "', " +
@@ -70,6 +72,8 @@ function applyConfig() {
 					  "'reply_message': '" + reply_message + "', " +
 					  "'extend_message': '" + extend_message + "', " +
 					  "'whitelist': '" + whitelist + "'}}";
+
+	config_data = config_data.replaceAll("\n", "\\n");
 
 	ajaxDo('apply_config', 'post', config_data, applyConfigHandler);
 }
@@ -83,7 +87,7 @@ function refreshHandler(data) {
 	document.getElementById('HTTPS').checked = !(json.protocol == 'HTTP');
 	document.getElementById('MethodToken').checked = !(json.token == '' || json.token == 'undefined');
 	document.getElementById('MethodPassword').checked = (json.token == '' || json.token == 'undefined');
-	console.log(json.token)
+
 	if (json.token != "undefined")
 		document.getElementById('Token').value = json.token;
 	if (json.login_id != "undefined")

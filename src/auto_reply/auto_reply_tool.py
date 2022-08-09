@@ -264,7 +264,7 @@ class WebConsoleHandler(BaseHTTPRequestHandler):
 			return
 
 		data = self.rfile.read(int(self.headers['content-length']))
-		data = eval(str(data, encoding='utf-8').replace('\n', '\\n'))
+		data = eval(str(data, encoding='utf-8'))
 
 		self.server.auto_reply_tool.update_config(data)
 		self.update_config(data)
