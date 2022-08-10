@@ -7,6 +7,7 @@ import logging
 import json
 import multiprocessing
 import os
+import queue
 import signal
 import sys
 import threading
@@ -41,6 +42,7 @@ class WebConsoleServer(HTTPServer):
 		self.icon_clicked = False
 		self.relogin_event = None
 		self.stop_event = multiprocessing.Event()
+		self.config_queue = multiprocessing.Queue(1)
 
 	def stop(self):
 		if type(self.work_proc) == multiprocessing.Process:
@@ -232,19 +234,21 @@ class WebConsoleHandler(BaseHTTPRequestHandler):
 				   'debug': False}
 
 		reply_message = data['reply_config']['reply_message']
-		extend_message = data['reply_config']['extend_message']
-		reply_interval = data['reply_config']['reply_interval']
-		max_reply_interval = data['reply_config']['max_reply_interval']
-		whitelist = data['reply_config']['whitelist'].split()
+		if reply_message.endswith('\n'):
+			reply_message = reply_message[:-1]
+
+		config = {'reply_message': reply_message,
+				  'extend_message': data['reply_config']['extend_message'].replace('\n', ''),
+				  'reply_interval': data['reply_config']['reply_interval'],
+				  'max_reply_interval': data['reply_config']['max_reply_interval'],
+				  'whitelist': data['reply_config']['whitelist'].split()
+		}
 
 		self.server.auto_reply_tool = AutoReplyTool(options,
-							 reply_message=reply_message,
-							 extend_message=extend_message,
-							 reply_interval=reply_interval,
-							 max_reply_interval=max_reply_interval,
-							 whitelist=whitelist,
-							 relogin_event=self.server.relogin_event,
-							 stop_event=self.server.stop_event)
+													config,
+													self.server.relogin_event,
+													self.server.stop_event,
+													self.server.config_queue)
 
 		if not self.server.auto_reply_tool.login():
 			logging.error("Login failed.")
@@ -266,7 +270,12 @@ class WebConsoleHandler(BaseHTTPRequestHandler):
 		data = self.rfile.read(int(self.headers['content-length']))
 		data = eval(str(data, encoding='utf-8'))
 
-		self.server.auto_reply_tool.update_config(data)
+		try:
+			self.server.config_queue.put_nowait(data['reply_config'])
+		except queue.Full:
+			self.response(-1, "Apply config failed: Please wait and retry.")
+			return
+
 		self.update_config(data)
 		self.response(0, "Apply config successed.")
 

@@ -5,29 +5,22 @@ from mattermostdriver.exceptions import NoAccessTokenProvided
 import datetime
 import logging
 import json
+import queue
 import signal
 import threading
 
 
 class AutoReplyTool(object):
 	"""docstring for AutoReplyTool"""
-	def __init__(self, options, reply_message, extend_message,
-				 reply_interval, max_reply_interval, whitelist,
-				 relogin_event, stop_event):
+	def __init__(self, options, config, relogin_event, stop_event, config_queue):
 		super(AutoReplyTool, self).__init__()
 		self.mm_driver = Driver(options)
 		self.username = ''
-		self.config = {
-			'reply_message': reply_message[:-1] if reply_message.endswith('\n') else reply_message,
-			'extend_message': extend_message.replace('\n', ''),
-			'reply_interval': reply_interval,
-			'max_reply_interval': max_reply_interval,
-			'whitelist': whitelist
-		}
-		self.update_config_cache = {'updated': False}
+		self.config = config
 		self.reply_record = {}
 		self.relogin_event = relogin_event
 		self.stop_event = stop_event
+		self.config_queue = config_queue
 
 	def stop_handler(self):
 		self.stop_event.wait()
@@ -149,25 +142,17 @@ class AutoReplyTool(object):
 		# Mark new post unread so that we won't lose notification.
 		self.mm_driver.client.make_request('post', '/users/%s/posts/%s/set_unread' % (self.mm_driver.client.userid, post['id']))
 
-	def update_config(self, config):
-		if 'reply_config' not in config:
-			return
-
-		for each in self.config:
-			if each in config['reply_config']:
-				self.update_config_cache[each] = config['reply_config'][each]
-
-		self.update_config_cache['updated'] = True
-
 	def do_update_config(self):
-		if not self.update_config_cache['updated']:
+		try:
+			config = self.config_queue.get_nowait()
+		except queue.Empty:
 			return
 
 		for each in self.config:
-			if each not in self.update_config_cache:
+			if each not in config:
 				continue
 
-			value = self.update_config_cache[each]
+			value = config[each]
 			if each == 'reply_message' and value.endswith('\n'):
 				value = value[:-1]
 
@@ -182,8 +167,6 @@ class AutoReplyTool(object):
 				value.append(self.username)
 
 			self.config[each] = value
-
-		self.update_config_cache['updated'] = False
 
 	# TODO: clean self.reply_record periodically.
 	def clean_cache(self):
