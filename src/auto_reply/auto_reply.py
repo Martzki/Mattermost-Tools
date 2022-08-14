@@ -9,10 +9,12 @@ import queue
 import signal
 import threading
 
+LOG = None
+
 
 class AutoReplyTool(object):
 	"""docstring for AutoReplyTool"""
-	def __init__(self, options, config, relogin_event, stop_event, config_queue):
+	def __init__(self, options, config, logger, relogin_event, stop_event, config_queue):
 		super(AutoReplyTool, self).__init__()
 		self.mm_driver = Driver(options)
 		self.username = ''
@@ -21,17 +23,19 @@ class AutoReplyTool(object):
 		self.relogin_event = relogin_event
 		self.stop_event = stop_event
 		self.config_queue = config_queue
+		global LOG
+		LOG = logger
 
 	def stop_handler(self):
 		self.stop_event.wait()
 		self.mm_driver.disconnect()
-		logging.info('Stop auto reply tool done.')
+		LOG.info('Stop auto reply tool done.')
 
 	def login(self):
 		try:
 			self.mm_driver.login()
 		except Exception as e:
-			logging.error("Login failed: %s" % (e))
+			LOG.error("Login failed: %s" % (e))
 			return False
 
 		self.username = self.mm_driver.client.username
@@ -40,20 +44,25 @@ class AutoReplyTool(object):
 		return True
 
 	def work(self):
+		LOG.info('Auto reply started.')
+
 		def ignore_signal(sig, frame):
-			logging.info("Ignore signal: %s frame: %s." % (sig, frame))
+			LOG.info("Ignore signal: %s frame: %s." % (sig, frame))
 
 		signal.signal(signal.SIGINT, ignore_signal)
 
-		stop = threading.Thread(target=self.stop_handler)
-		stop.start()
+		stop_handler = threading.Thread(target=self.stop_handler)
+		stop_handler.start()
 
 		self.mm_driver.init_websocket(self.mm_event_handler)
+
+		LOG.info('Auto reply finished.')
 
 	async def mm_event_handler(self, message):
 		msg = json.loads(message)
 
-		logging.debug('mm msg: %s' % json.dumps(msg, indent=2))
+		# Log will record user's message to log file so disable by default.
+		# LOG.debug('mm msg: %s' % json.dumps(msg, indent=2))
 
 		post = self.post_handler(msg)
 
@@ -63,11 +72,8 @@ class AutoReplyTool(object):
 		try:
 			self.auto_reply_handler(post)
 		except NoAccessTokenProvided as e:
-			logging.error('Authentication is invalid: %s' % e)
-
-			if self.relogin_event:
-				self.relogin_event.set()
-
+			LOG.error('Authentication is invalid: %s' % e)
+			self.relogin_event.set()
 			self.mm_driver.disconnect()
 
 	def post_handler(self, msg):
@@ -112,10 +118,13 @@ class AutoReplyTool(object):
 		channel_id = post['channel_id']
 		message = post['message']
 
+		LOG.debug('Handle message in channel %s.' % (channel_id))
+
 		if channel_id not in self.reply_record:
 			self.reply_record[channel_id] = {'extend': False}
 
 		if message == self.config['extend_message']:
+			LOG.debug('Extend reply interval.')
 			self.reply_record[channel_id]['extend'] = True
 			return
 
@@ -126,7 +135,7 @@ class AutoReplyTool(object):
 			prev_create_at = prev['posts'][prev['order'][0]]['create_at'] / 1000
 			create_at = post['create_at'] / 1000
 
-			logging.debug("prev_create_at: %s, create_at: %s, interval: %s." % (prev_create_at, create_at, interval))
+			LOG.debug("prev_create_at: %s, create_at: %s, interval: %s." % (prev_create_at, create_at, interval))
 			if create_at - prev_create_at < float(interval):
 				return
 
@@ -136,8 +145,9 @@ class AutoReplyTool(object):
 						(self.config['extend_message'], datetime.timedelta(seconds=int(self.config['max_reply_interval'])),
 						 datetime.timedelta(seconds=int(self.config['reply_interval'])))
 
-		self.mm_driver.posts.create_post({'channel_id': channel_id,
-										  'message': ('##### [Auto Reply] ' + self.config['reply_message'] + extend_prompt).replace('\n', '\n##### [Auto Reply] ')})
+		reply = ('##### [Auto Reply] ' + self.config['reply_message'] + extend_prompt).replace('\n', '\n##### [Auto Reply] ')
+		self.mm_driver.posts.create_post({'channel_id': channel_id, 'message': reply})
+		LOG.debug('Send reply to channel %s.' % (channel_id))
 
 		# Mark new post unread so that we won't lose notification.
 		self.mm_driver.client.make_request('post', '/users/%s/posts/%s/set_unread' % (self.mm_driver.client.userid, post['id']))
@@ -148,6 +158,7 @@ class AutoReplyTool(object):
 		except queue.Empty:
 			return
 
+		LOG.info('Get new config: %s' % (config))
 		for each in self.config:
 			if each not in config:
 				continue
@@ -166,6 +177,7 @@ class AutoReplyTool(object):
 				value = value.split()
 				value.append(self.username)
 
+			LOG.info('Config %s is updated from %s to %s.' % (self.config[each], value))
 			self.config[each] = value
 
 	# TODO: clean self.reply_record periodically.

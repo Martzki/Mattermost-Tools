@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # coding=utf-8
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from logging.handlers import RotatingFileHandler
 from auto_reply import AutoReplyTool
 import argparse
 import logging
@@ -25,7 +26,28 @@ if sys.platform == 'win32':
 SERVER_URL = '127.0.0.1'
 SERVER_PORT = 6655
 CONF = 'mm_conf.yaml'
-LOG_FILE = 'MattermostTools.log'
+LOG = None
+LOG_LEVEL = logging.INFO
+
+def get_logger(mod, level):
+	logger = logging.getLogger(mod)
+	logger.setLevel(logging.DEBUG)
+
+	format = logging.Formatter(fmt="%(asctime)s - %(levelname)s - %(name)s - %(pathname)s[line:%(lineno)d]: %(message)s", datefmt="%Y/%m/%d %H:%M:%S")
+
+	sh = logging.StreamHandler()
+	sh.setLevel(logging.INFO)
+	sh.setFormatter(format)
+
+	fh = RotatingFileHandler(filename=mod + '.log', encoding='utf-8', maxBytes=1024 * 1024 * 20)
+	fh.setLevel(level)
+	fh.setFormatter(format)
+
+	logger.addHandler(sh)
+	logger.addHandler(fh)
+
+	return logger
+
 
 def resource_path_prefix():
 	return sys._MEIPASS + '/' if getattr(sys, 'frozen', False) else './'
@@ -48,15 +70,15 @@ class WebConsoleServer(HTTPServer):
 		if type(self.work_proc) == multiprocessing.Process:
 			self.stop_event.set()
 			self.work_proc.join()
-			logging.info('Stop auto reply work process done.')
+			LOG.info('Stop auto reply work process done.')
 
 		if type(self.icon_thread) == threading.Thread:
 			self.icon_stop = True
 			self.icon.stop()
-			logging.info('Stop icon thread done.')
+			LOG.info('Stop icon thread done.')
 
 		self.shutdown()
-		logging.info('Stop web console server done.')
+		LOG.info('Stop web console server done.')
 
 	def icon_start(self):
 		# Only create icon GUI thread on win32 platform.
@@ -108,10 +130,10 @@ class WebConsoleServer(HTTPServer):
 
 class WebConsoleHandler(BaseHTTPRequestHandler):
 	def log_message(self, format, *args):
-		logging.info('%s - %s' % (self.address_string(), format%args))
+		LOG.info('%s - %s' % (self.address_string(), format%args))
 
 	def log_error(self, format, *args):
-		logging.error('%s - %s' % (self.address_string(), format%args))
+		LOG.error('%s - %s' % (self.address_string(), format%args))
 
 	def do_GET(self):
 		result = urllib.parse.urlparse(self.path)
@@ -246,12 +268,13 @@ class WebConsoleHandler(BaseHTTPRequestHandler):
 
 		self.server.auto_reply_tool = AutoReplyTool(options,
 													config,
+													get_logger('auto_reply', LOG_LEVEL),
 													self.server.relogin_event,
 													self.server.stop_event,
 													self.server.config_queue)
 
 		if not self.server.auto_reply_tool.login():
-			logging.error("Login failed.")
+			LOG.error("Login failed.")
 			self.response(-1, "Login failed.")
 			self.server.work_proc = None
 			return
@@ -290,9 +313,9 @@ class WebConsoleHandler(BaseHTTPRequestHandler):
 						org_conf[each] = data[each]
 
 				yaml.dump(org_conf, file, sort_keys=False)
-			logging.info("Config %s updated." % (CONF))
+			LOG.info("Config %s updated." % (CONF))
 		except Exception as e:
-			logging.error("Update config %s faield: %s." % (CONF, e))
+			LOG.error("Update config %s faield: %s." % (CONF, e))
 
 
 if __name__ == '__main__':
@@ -307,10 +330,8 @@ if __name__ == '__main__':
 	server_url = SERVER_URL if args.address is None else args.address
 	server_port = SERVER_PORT if args.port is None else int(args.port)
 
-	logging.basicConfig(level=logging.INFO if args.debug is None else logging.DEBUG,
-						filename=None if args.debug is None else LOG_FILE,
-						filemode='a',
-						format='%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s')
+	LOG_LEVEL = logging.DEBUG if args.debug else logging.INFO
+	LOG = get_logger('web_console', LOG_LEVEL)
 
 	# Init default config.
 	if not os.path.exists(CONF):
@@ -331,22 +352,22 @@ if __name__ == '__main__':
 		try:
 			with open(CONF, 'w', encoding='utf-8') as conf:
 				yaml.dump(data, conf, sort_keys=False)
-				logging.info("Init default config: %s done." % (CONF))
+				LOG.info("Init default config: %s done." % (CONF))
 		except Exception as e:
-			logging.critical("Init config %s failed: %s." % (CONF, e))
+			LOG.critical("Init config %s failed: %s." % (CONF, e))
 			exit(-1)
 
 	try:
-		logging.info("Init web console at: %s:%s." % (server_url, server_port))
+		LOG.info("Init web console at: %s:%s." % (server_url, server_port))
 		web_console = WebConsoleServer((server_url, server_port), WebConsoleHandler)
 	except OSError as e:
-		logging.critical("Init web console at %s:%s failed: %s." %\
+		LOG.critical("Init web console at %s:%s failed: %s." %\
 						 (server_url, server_port))
 		exit(-1)
 
 	try:
 		web_console.icon_start()
-		logging.info("Start web console.")
+		LOG.info("Start web console.")
 		web_console.serve_forever()
 	except KeyboardInterrupt:
 		web_console.stop()
