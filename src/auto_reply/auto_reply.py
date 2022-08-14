@@ -177,7 +177,7 @@ class AutoReplyTool(object):
 				value = value.split()
 				value.append(self.username)
 
-			LOG.info('Config %s is updated from %s to %s.' % (self.config[each], value))
+			LOG.info('Config %s is updated from %s to %s.' % (each, self.config[each], value))
 			self.config[each] = value
 
 	# TODO: clean self.reply_record periodically.
