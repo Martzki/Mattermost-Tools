@@ -25,7 +25,7 @@ optional arguments:
 
 ```
 
-`--debug`: This option will set log level to debug and save log to local file. Otherwise the log would print to stderr by default.
+`--debug`: This option will set log level to DEBUG when logging to file. Log level in stderr in always INFO.
 
 `--address`: This option can set the address to listen on. `127.0.0.1`is a good choice on most occasions, and for security you shouldn't change it unless necessary.
 
@@ -41,11 +41,11 @@ Then login with your authentication and change your config on the web page direc
 
 There are some config you can change when using auto reply:
 
-`Reply Interval`: The interval between auto reply(only accept seconds now). Notice update of `Reply Interval` will reset all auto reply records and means every new message will trigger an auto reply.
+`Reply Interval`: If the interval between the last two message received in the same channel is larger than interval, then send a reply message.
 
 `Max Interval`: Extend next auto reply interval to this value(only accept seconds now).
 
 `Reply Message`: The message to send. You can wrap on the textarea and don't need to use `\n` yourself.
 
-`Extend Message`: When this message is received, the next auto reply interval of this chat is set to `Max Interval`.
+`Extend Message`: When this message is received, the next auto reply interval of this channel is set to `Max Interval`.
 
